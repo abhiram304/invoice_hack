@@ -188,6 +188,7 @@ def webhook():
             ' list. Do you want to create one?'.format(_vendor_name))
     elif intent == 'vendorAddressAdd':
         createVendor(_vendor_name)
+        createInvoice(_amount, _vendor_name)
         response_text = ('I see that the vendor address is {}.'
             ' We will send payment to that address. Is that right?'.format(
             _address
@@ -200,15 +201,51 @@ def webhook():
 def inner_extract():
     return render_template('wix_page.html')
 
+@app.route('/createInvoice', methods=['POST'])
+def createInvoice(_amount=0, _vendor_name=None):
+    if _vendor_name is None:
+        _vendor_name = 'Test_vendor'
+        _amount = 0
+    config = {"access_token": "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..Vgq-fnSOamKznsNO1s0nvQ.BLAYc8NQNpMvO8jWgA7RjDDZ32o7dykaf7yXANpVXSUoTRoZE4BRCTloYK81yJBw_c3lY8EdG8Ku36uCM0yHu7MdA4c7ILOwBOlC4FrZFE2GXgm-kTnQ6rDRbS2gugMiwO1cUMX1r7CjRIaR_kSkBQb40QlguPcYXs6Josgl_xdDqpGx0FswEzZV7F78Adenp5gtqgyoMvpS0bqffp8SA5xGZm2PGRNjawuUF3JOxothYWcdi0CTAe_JXr86QqlFHw93K8DN_xDUSxSpPqrVYN21QQYa4f9jPvHiWP_KDPDH6Sd05eX_GHePamR-NWyq5Zw72FOPqir1oAoj9PGrRjL9MmNvVjB1J_1WMhvTsU5eTXAJXEDChhAkoYo7PKwWBqI5VoPo2qpc-SDxrw3pmY9t0C5nT8SPWHaHCiW3f9KWfo3ZGsMcuTiHzcdchlsBXXy9GdrhjaxV0-uvfUX8tTRdHeotnCYUKuRzVv0JRF0Ry9XDoytjKqIo0TDWfGHRswFUzAKU6qwoeFof4_qMUEbN994WvOgRBmwTpPFmFxaPaRBBw4f8N3rOJD2F99rPturyESxr8cyPRMpgmD6IZGE6CTO8QvlHILRtQaQZU39JcBDtf2kYTOhz_97nuLGrOoYXMOr3JtPPW8l5zj7Mm08uwVm-R-WofjFbOZTOJsKk1esn4jk2W9GWL2kQkk9s.vFC_yNz-Od5Lve-pJ--oFg",
+    "refresh_token": "L011550034473lIamf37xV0NWbnrqZzHVAt1Bc6X1cGYbq8eSz",
+    "realm_id": "123146162818384",
+    "qbo_base_url": "https://sandbox-quickbooks.api.intuit.com",
+    "client_id": "",
+    "client_secret": "",
+    "discovery_doc": "https://developer.intuit.com/.well-known/openid_sandbox_configuration/"}
+    url = config['qbo_base_url'] + '/v3/company/' + config['realm_id'] + '/invoice'
+    invoice = {
+    "Line": [
+    {
+      "Amount": _amount,
+      "DetailType": "SalesItemLineDetail",
+      "SalesItemLineDetail": {
+        "ItemRef": {
+          "value": "1",
+          "name": "Services"
+        }
+      }
+    }
+    ],
+    "CustomerRef": {
+    "value": "1",
+    "name": _vendor_name
+    }
+    }
+    r = requests.post(url, headers=headers, data=json.dumps(invoice))
+    print (r.status_code)
+    print (r.content)
+    try:
+        response = r.json()["Invoice"]
+    except:
+        response = r.content
+    return str(response), r.status_code
+
 
 @app.route('/createVendor', methods=['GET'])
 def createVendor(_vendor_name=None):
     if _vendor_name is None:
         _vendor_name = 'Test_vendor'
-    """
-        POST request to create a Vendor in QBO
-        Refer here for other Vendor fields: https://developer.intuit.com/docs/api/accounting/vendor
-    """
 
     { "refresh_token": "L0115500864961PQSe0ZFRMgRMOjJPSco9OoUlakXv7ypIgTfX", "access_token": "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..Vgq-fnSOamKznsNO1s0nvQ.BLAYc8NQNpMvO8jWgA7RjDDZ32o7dykaf7yXANpVXSUoTRoZE4BRCTloYK81yJBw_c3lY8EdG8Ku36uCM0yHu7MdA4c7ILOwBOlC4FrZFE2GXgm-kTnQ6rDRbS2gugMiwO1cUMX1r7CjRIaR_kSkBQb40QlguPcYXs6Josgl_xdDqpGx0FswEzZV7F78Adenp5gtqgyoMvpS0bqffp8SA5xGZm2PGRNjawuUF3JOxothYWcdi0CTAe_JXr86QqlFHw93K8DN_xDUSxSpPqrVYN21QQYa4f9jPvHiWP_KDPDH6Sd05eX_GHePamR-NWyq5Zw72FOPqir1oAoj9PGrRjL9MmNvVjB1J_1WMhvTsU5eTXAJXEDChhAkoYo7PKwWBqI5VoPo2qpc-SDxrw3pmY9t0C5nT8SPWHaHCiW3f9KWfo3ZGsMcuTiHzcdchlsBXXy9GdrhjaxV0-uvfUX8tTRdHeotnCYUKuRzVv0JRF0Ry9XDoytjKqIo0TDWfGHRswFUzAKU6qwoeFof4_qMUEbN994WvOgRBmwTpPFmFxaPaRBBw4f8N3rOJD2F99rPturyESxr8cyPRMpgmD6IZGE6CTO8QvlHILRtQaQZU39JcBDtf2kYTOhz_97nuLGrOoYXMOr3JtPPW8l5zj7Mm08uwVm-R-WofjFbOZTOJsKk1esn4jk2W9GWL2kQkk9s.vFC_yNz-Od5Lve-pJ--oFg",
      "expires_in": 3600,
