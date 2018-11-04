@@ -188,7 +188,7 @@ def webhook():
             ' list. Do you want to create one?'.format(_vendor_name))
     elif intent == 'vendorAddressAdd':
         createVendor(_vendor_name)
-        createInvoice(_amount, _vendor_name)
+        createBill(_amount, _vendor_name)
         response_text = ('I see that the vendor address is {}.'
             ' We will send payment to that address. Is that right?'.format(
             _address
@@ -201,8 +201,8 @@ def webhook():
 def inner_extract():
     return render_template('wix_page.html')
 
-@app.route('/createInvoice', methods=['POST'])
-def createInvoice(_amount=0, _vendor_name=None):
+@app.route('/createBill', methods=['POST'])
+def createBill(_amount=0, _vendor_name=None):
     if _vendor_name is None:
         _vendor_name = 'Test_vendor'
         _amount = 0
@@ -213,30 +213,33 @@ def createInvoice(_amount=0, _vendor_name=None):
     "client_id": "",
     "client_secret": "",
     "discovery_doc": "https://developer.intuit.com/.well-known/openid_sandbox_configuration/"}
-    url = config['qbo_base_url'] + '/v3/company/' + config['realm_id'] + '/invoice'
-    invoice = {
-    "Line": [
-    {
-      "Amount": _amount,
-      "DetailType": "SalesItemLineDetail",
-      "SalesItemLineDetail": {
-        "ItemRef": {
-          "value": "1",
-          "name": "Services"
+    url = config['qbo_base_url'] + '/v3/company/' + config['realm_id'] + '/bill'
+    bill = {
+    "Line":[
+        {
+            "Id":"1",
+            "Amount": _amount,
+            "DetailType":"AccountBasedExpenseLineDetail",
+            "AccountBasedExpenseLineDetail":
+            {
+                "AccountRef":
+                {
+                    "value":"7"
+                }
+            }
         }
-      }
-    }
     ],
-    "CustomerRef": {
-    "value": "1",
-    "name": _vendor_name
+    "VendorRef":
+    {
+        "value":"56",
+        "name": _vendor_name
     }
     }
-    r = requests.post(url, headers=headers, data=json.dumps(invoice))
+    r = requests.post(url, headers=headers, data=json.dumps(bill))
     print (r.status_code)
     print (r.content)
     try:
-        response = r.json()["Invoice"]
+        response = r.json()["Bill"]
     except:
         response = r.content
     return str(response), r.status_code
