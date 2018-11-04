@@ -214,6 +214,13 @@ def createBill(_amount=0, _vendor_name=None):
     "client_secret": "",
     "discovery_doc": "https://developer.intuit.com/.well-known/openid_sandbox_configuration/"}
     url = config['qbo_base_url'] + '/v3/company/' + config['realm_id'] + '/bill'
+
+    headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + config['access_token']
+            }
+
     bill = {
     "Line":[
         {
